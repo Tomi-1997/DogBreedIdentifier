@@ -91,8 +91,8 @@ def get_model():
     ## Add Layers
     model.add(Conv2D(filter_size, kernel_size=(3, 3), strides=(1, 1), padding='same', kernel_initializer=weight_init,
                      kernel_regularizer=reg, bias_initializer=bias_init, input_shape=(IMG_HEIGHT, IMG_WIDTH, CHANNELS)))
-    model.add(BatchNormalization())
     model.add(activ)
+    model.add(BatchNormalization())
     model.add(MaxPooling2D(pool_size=2, padding='same'))
     model.add(SpatialDropout2D(drop_rate))
 
@@ -101,8 +101,8 @@ def get_model():
         filter_size *= 2
         model.add(Conv2D(filter_size, kernel_size=(3, 3), strides=(1, 1), padding='same', kernel_initializer=weight_init,
                          kernel_regularizer=reg, bias_initializer=bias_init))
-        model.add(BatchNormalization())
         model.add(activ)
+        model.add(BatchNormalization())
         model.add(MaxPooling2D(pool_size=2, padding='same'))
         model.add(SpatialDropout2D(drop_rate))
 
