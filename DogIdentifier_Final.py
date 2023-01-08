@@ -2,7 +2,7 @@ import time
 import pandas as pd # open csv
 import numpy as np
 import matplotlib.pyplot as plt
-import os, random # get random dog batch
+import os, random
 import cv2
 from matplotlib.image import imread
 from PIL import Image, ImageOps
@@ -56,8 +56,6 @@ def process_image(image_path):
     """
     size = IMG_HEIGHT
     img = tf.io.read_file(image_path)
-
-
     # Turn the jpeg image into numerical Tensor with 3 colour channels (Red, Green, Blue)
     img = tf.io.decode_image(img, channels = CHANNELS)
     # Convert the colour channel values from 0-225 values to 0-1 values
@@ -89,7 +87,8 @@ def get_model():
     model = Sequential()
     weight_init = tf.keras.initializers.RandomNormal(mean=0.0, stddev=0.01, seed=4)
     bias_init = tf.keras.initializers.Zeros()
-    ######################################### Layers
+    
+    ## Add Layers
     model.add(Conv2D(filter_size, kernel_size=(3, 3), strides=(1, 1), padding='same', kernel_initializer=weight_init,
                      kernel_regularizer=reg, bias_initializer=bias_init, input_shape=(IMG_HEIGHT, IMG_WIDTH, CHANNELS)))
     model.add(BatchNormalization())
@@ -97,6 +96,7 @@ def get_model():
     model.add(MaxPooling2D(pool_size=2, padding='same'))
     model.add(SpatialDropout2D(drop_rate))
 
+    ## Add several layers, each time increase the filter size to extract different features.
     while filter_size < 128:
         filter_size *= 2
         model.add(Conv2D(filter_size, kernel_size=(3, 3), strides=(1, 1), padding='same', kernel_initializer=weight_init,
@@ -105,7 +105,6 @@ def get_model():
         model.add(activ)
         model.add(MaxPooling2D(pool_size=2, padding='same'))
         model.add(SpatialDropout2D(drop_rate))
-
 
     model.add(GlobalAveragePooling2D())
     model.add(Dense(1200, activation=activ, kernel_initializer=weight_init,
@@ -176,29 +175,27 @@ if __name__ == '__main__':
     Y_val = tf.convert_to_tensor(Y_val)
 
     Train = True
+    Predict = False
     checkpoint_path = "training_final/cp.ckpt"
+    checkpoint_dir = os.path.dirname(checkpoint_path)
     model = get_model()
 
     if Train:
-        datagen = get_image_gen()
-
-        # if validation accuracy doesnt improve for 15 epoch, stop training
-        early_stopping = EarlyStopping(monitor='val_accuracy', patience=15)
-        checkpoint_dir = os.path.dirname(checkpoint_path)
-        checkpointer = ModelCheckpoint(filepath=checkpoint_path, verbose=1, save_best_only=True, save_weights_only=True)
+        
+        datagen = get_image_gen() # Class which aguments data. (Rotates it, flips, zooms in)
+        early_stopping = EarlyStopping(monitor='val_accuracy', patience=15) # Stop training if validation dosen't increase for 15 epochs
+        checkpointer = ModelCheckpoint(filepath=checkpoint_path, verbose=1, save_best_only=True, save_weights_only=True) # Save model
         datagen.fit(X_train)
-        callbacks = [checkpointer, early_stopping]
-        learning_rate = 0.001
+        callbacks = [checkpointer, early_stopping] # Train model with these extra parameters.
+        learning_rate = 0.001 # Start learning rate high and decrease
         while True:
         ###################################################### TRAIN
             print(f'Starting training with learning of {learning_rate}')
             history = train_model(model, callbacks, Adam(learning_rate=learning_rate))
             learning_rate /= 10
-
-    #     model.summary()
-    #     plot_history(history)
-    else:
-        # Try to load earlier model
+            
+    if Predict:
+        # Try to load earlier model, and predict pictures from my folder.
         try:
             model = tf.keras.models.load_model(checkpoint_path)
             guess_my_pics(model)
